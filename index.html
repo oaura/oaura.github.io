@@ -12,6 +12,23 @@
             font-family: 'Inter', sans-serif;
             background-color: #0d1117; /* Even darker background */
         }
+        /* Performance-Optimized Aura Effect */
+        .aura-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 15% 25%, rgba(168, 85, 247, 0.2), transparent 40%),
+                        radial-gradient(circle at 85% 75%, rgba(59, 130, 246, 0.2), transparent 40%);
+            animation: aura-pan 30s infinite alternate ease-in-out;
+            z-index: -1;
+        }
+        @keyframes aura-pan {
+            from { background-position: 0% 0%; }
+            to { background-position: 100% 100%; }
+        }
+
         .main-container {
             background-color: rgba(17, 24, 39, 0.8); /* Semi-transparent dark container */
             backdrop-filter: blur(20px);
@@ -20,54 +37,7 @@
             position: relative;
             overflow: hidden;
         }
-        /* Aura Effect */
-        .aura-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-        .aura-blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px); /* Increased blur */
-            opacity: 0.7; /* Increased opacity */
-            mix-blend-mode: screen;
-        }
-        .blob1 {
-            width: 500px; /* Increased size */
-            height: 500px;
-            background: rgba(168, 85, 247, 0.4); /* Increased alpha */
-            animation: move-blob1 25s infinite alternate;
-        }
-        .blob2 {
-            width: 450px; /* Increased size */
-            height: 450px;
-            background: rgba(59, 130, 246, 0.4); /* Increased alpha */
-            animation: move-blob2 30s infinite alternate;
-        }
-        .blob3 {
-            width: 400px; /* Increased size */
-            height: 400px;
-            background: rgba(239, 68, 68, 0.4); /* Increased alpha */
-            animation: move-blob3 20s infinite alternate;
-        }
-        @keyframes move-blob1 {
-            from { transform: translate(10vw, 20vh) rotate(0deg); }
-            to { transform: translate(70vw, 60vh) rotate(180deg); }
-        }
-        @keyframes move-blob2 {
-            from { transform: translate(80vw, 10vh) rotate(0deg); }
-            to { transform: translate(20vw, 80vh) rotate(-180deg); }
-        }
-        @keyframes move-blob3 {
-            from { transform: translate(50vw, 70vh) rotate(0deg); }
-            to { transform: translate(10vw, 10vh) rotate(360deg); }
-        }
-
+        
         .content-wrapper {
             position: relative;
             z-index: 1;
@@ -182,7 +152,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #d1d5db;
             border-radius: 0.75rem;
-            padding: 2rem;
+            padding: 1.5rem; /* Adjusted for mobile */
             width: 90%;
             max-width: 48rem;
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
@@ -194,24 +164,20 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
-    <div class="aura-background">
-        <div class="aura-blob blob1"></div>
-        <div class="aura-blob blob2"></div>
-        <div class="aura-blob blob3"></div>
-    </div>
-    <div class="main-container w-full max-w-7xl rounded-xl shadow-2xl p-6 md:p-8">
+<body class="bg-gray-900 flex items-center justify-center min-h-screen p-2 sm:p-4">
+    <div class="aura-background"></div>
+    <div class="main-container w-full max-w-7xl rounded-xl shadow-2xl p-4 md:p-8">
         <div class="content-wrapper">
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 pb-6 border-b border-gray-700/50">
                 <div class="text-center md:text-left">
-                     <h1 class="text-2xl md:text-3xl font-bold text-gray-100 mb-1">Migraine Aura Visualization</h1>
-                     <p class="text-gray-400">A timeline of temporary visual disturbances.</p>
+                     <h1 class="text-2xl sm:text-3xl font-bold text-gray-100 mb-1">Migraine Aura Visualization</h1>
+                     <p class="text-gray-400 text-sm sm:text-base">A timeline of temporary visual disturbances.</p>
                 </div>
                 <div class="flex items-center gap-3 mt-4 md:mt-0">
                     <button id="info-btn" class="glass-button text-gray-200 font-semibold p-2 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </button>
-                    <button id="update-data-btn" class="glass-button text-white font-semibold px-5 py-2.5 rounded-lg">
+                    <button id="update-data-btn" class="glass-button text-white font-semibold px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base">
                         Update Data
                     </button>
                 </div>
@@ -225,10 +191,10 @@
     <div id="info-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-100">About Migraine Auras</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-gray-100">About Migraine Auras</h2>
                 <button id="close-info-modal-btn" class="text-gray-400 hover:text-gray-200 text-3xl leading-none">&times;</button>
             </div>
-            <div class="prose prose-invert max-w-none text-gray-300 space-y-4">
+            <div class="prose prose-sm sm:prose-base prose-invert max-w-none text-gray-300 space-y-4 max-h-[70vh] overflow-y-auto">
                 <p>For about one in five people with migraines, the experience begins with a distinct and often surreal prelude: the migraine aura.</p>
                 <p>These auras are most often visual, but they can also manifest as sensory, motor, or even verbal disturbances—a temporary disruption of the senses.</p>
                 <p>Imagine a slow-moving electrical or chemical wave sweeping across the visual cortex—the part of your brain that processes sight. As this wave propagates, it can create a cascade of vivid, sometimes disorienting, visual hallucinations.</p>
@@ -242,10 +208,10 @@
     <div id="data-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-100">Paste Your Data</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-gray-100">Paste Your Data</h2>
                 <button id="close-data-modal-btn" class="text-gray-400 hover:text-gray-200 text-3xl leading-none">&times;</button>
             </div>
-            <p class="text-gray-400 mb-4">Paste your data in the format `DD.MM.YY - EMOJI` below. Each entry should be on a new line.</p>
+            <p class="text-gray-400 mb-4 text-sm sm:text-base">Paste your data in the format `DD.MM.YY - EMOJI` below. Each entry should be on a new line.</p>
             <textarea id="data-input" class="w-full h-64 p-3 border bg-gray-800 border-gray-600 text-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
             <div class="mt-6 flex justify-end gap-4">
                 <button id="cancel-btn" class="glass-button text-gray-200 font-semibold px-4 py-2 rounded-lg">Cancel</button>
@@ -445,7 +411,6 @@
         // --- D3 Chart Setup ---
         const container = d3.select("#chart");
         const legendContainer = d3.select("#legend");
-        const margin = { top: 20, right: 30, bottom: 40, left: 30 };
         const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
         function renderChart(data) {
@@ -457,6 +422,9 @@
 
             container.selectAll("*").remove();
             legendContainer.selectAll("*").remove();
+            
+            const isMobile = window.innerWidth < 768;
+            const margin = { top: 20, right: isMobile ? 15 : 30, bottom: 40, left: isMobile ? 15 : 30 };
 
             const containerNode = container.node();
             const width = containerNode.clientWidth - margin.left - margin.right;
@@ -472,14 +440,14 @@
             const allCategories = ['All', ...categoryOrder];
             allCategories.forEach(cat => {
                 const legendItem = legendContainer.append('div')
-                    .attr('class', 'legend-item text-sm text-gray-200 font-medium px-3 py-1 rounded-full flex items-center gap-2')
+                    .attr('class', 'legend-item text-xs sm:text-sm text-gray-200 font-medium px-3 py-1 rounded-full flex items-center gap-2')
                     .style('color', cat === 'All' ? '#e5e7eb' : (categories[cat]?.color || '#9ca3af'))
                     .classed('active', cat === currentFilter)
                     .on('click', () => {
                         currentFilter = cat;
                         renderChart(data); // Re-render with new filter
                     });
-                legendItem.append('span').attr('class', 'w-3 h-3 rounded-full').style('background-color', cat === 'All' ? '#9ca3af' : (categories[cat]?.color || '#9ca3af'));
+                legendItem.append('span').attr('class', 'w-2 h-2 sm:w-3 sm:h-3 rounded-full').style('background-color', cat === 'All' ? '#9ca3af' : (categories[cat]?.color || '#9ca3af'));
                 legendItem.append('span').text(cat);
             });
 
@@ -494,7 +462,7 @@
             // --- Axes ---
             const x = d3.scaleTime().domain(d3.extent(data, d => d.date)).range([0, width]);
             const y = d3.scaleLinear().domain([d3.min(series, d => d3.min(d, d => d[0])), d3.max(series, d => d3.max(d, d => d[1]))]).range([height, 0]);
-            const xAxis = d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("'%y"));
+            const xAxis = d3.axisBottom(x).ticks(isMobile ? 4 : d3.timeYear.every(1)).tickFormat(d3.timeFormat("'%y"));
             svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(xAxis);
 
             // --- Area Generator ---
@@ -540,13 +508,10 @@
         // --- Modal Logic ---
         const dataModal = document.getElementById('data-modal');
         const infoModal = document.getElementById('info-modal');
-        
         const updateDataBtn = document.getElementById('update-data-btn');
         const infoBtn = document.getElementById('info-btn');
-
         const closeDataModalBtn = document.getElementById('close-data-modal-btn');
         const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
-        
         const cancelBtn = document.getElementById('cancel-btn');
         const visualizeBtn = document.getElementById('visualize-btn');
         const dataInput = document.getElementById('data-input');
@@ -554,17 +519,11 @@
         const openModal = (modal) => modal.classList.add('visible');
         const closeModal = (modal) => modal.classList.remove('visible');
 
-        updateDataBtn.addEventListener('click', () => {
-            dataInput.value = rawData.trim();
-            openModal(dataModal);
-        });
+        updateDataBtn.addEventListener('click', () => { dataInput.value = rawData.trim(); openModal(dataModal); });
         infoBtn.addEventListener('click', () => openModal(infoModal));
-
         closeDataModalBtn.addEventListener('click', () => closeModal(dataModal));
         closeInfoModalBtn.addEventListener('click', () => closeModal(infoModal));
-        
         cancelBtn.addEventListener('click', () => closeModal(dataModal));
-        
         dataModal.addEventListener('click', (e) => { if (e.target === dataModal) closeModal(dataModal); });
         infoModal.addEventListener('click', (e) => { if (e.target === infoModal) closeModal(infoModal); });
 
@@ -575,15 +534,29 @@
             closeModal(dataModal);
         });
 
+        // --- Debounced Resize ---
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
+        const debouncedRender = debounce(() => {
+            let currentData = parseAndProcessData(rawData);
+            renderChart(currentData);
+        }, 250);
+        
         // --- Initial Draw & Resize Handling ---
         let initialData = parseAndProcessData(rawData);
         renderChart(initialData);
 
-        window.addEventListener('resize', () => {
-            let currentData = parseAndProcessData(rawData);
-            renderChart(currentData);
-        });
+        window.addEventListener('resize', debouncedRender);
     </script>
 </body>
 </html>
