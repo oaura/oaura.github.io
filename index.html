@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migraine Aura Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Even darker background */
+        }
+        .main-container {
+            background-color: rgba(17, 24, 39, 0.8); /* Semi-transparent dark container */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Aura Effect */
+        .aura-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px); /* Increased blur */
+            opacity: 0.7; /* Increased opacity */
+            mix-blend-mode: screen;
+        }
+        .blob1 {
+            width: 500px; /* Increased size */
+            height: 500px;
+            background: rgba(168, 85, 247, 0.4); /* Increased alpha */
+            animation: move-blob1 25s infinite alternate;
+        }
+        .blob2 {
+            width: 450px; /* Increased size */
+            height: 450px;
+            background: rgba(59, 130, 246, 0.4); /* Increased alpha */
+            animation: move-blob2 30s infinite alternate;
+        }
+        .blob3 {
+            width: 400px; /* Increased size */
+            height: 400px;
+            background: rgba(239, 68, 68, 0.4); /* Increased alpha */
+            animation: move-blob3 20s infinite alternate;
+        }
+        @keyframes move-blob1 {
+            from { transform: translate(10vw, 20vh) rotate(0deg); }
+            to { transform: translate(70vw, 60vh) rotate(180deg); }
+        }
+        @keyframes move-blob2 {
+            from { transform: translate(80vw, 10vh) rotate(0deg); }
+            to { transform: translate(20vw, 80vh) rotate(-180deg); }
+        }
+        @keyframes move-blob3 {
+            from { transform: translate(50vw, 70vh) rotate(0deg); }
+            to { transform: translate(10vw, 10vh) rotate(360deg); }
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            background: rgba(17, 24, 39, 0.9);
+            color: #f9fafb;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 50;
+            max-width: 250px;
+        }
+        .tooltip-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .tooltip-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tooltip-emojis {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .x-axis path,
+        .x-axis line {
+            stroke: #4b5563;
+        }
+        .x-axis text {
+            fill: #9ca3af;
+            font-size: 12px;
+        }
+        .stream-layer {
+            transition: opacity 0.3s ease-in-out;
+            mix-blend-mode: lighten; /* A more vibrant blend mode */
+        }
+        .stream-layer.filtered-out {
+            opacity: 0.1;
+        }
+        .hover-line {
+            stroke: #9ca3af;
+            stroke-width: 1.5px;
+            stroke-dasharray: 4, 4;
+            pointer-events: none;
+        }
+        .legend-item {
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .legend-item.active {
+            font-weight: 600;
+            box-shadow: 0 0 0 2px currentColor;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        /* Glassmorphism Button Style */
+        .glass-button {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: rgba(31, 41, 55, 0.8); /* Semi-transparent modal */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d1d5db;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 48rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+         .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
+    <div class="aura-background">
+        <div class="aura-blob blob1"></div>
+        <div class="aura-blob blob2"></div>
+        <div class="aura-blob blob3"></div>
+    </div>
+    <div class="main-container w-full max-w-7xl rounded-xl shadow-2xl p-6 md:p-8">
+        <div class="content-wrapper">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 pb-6 border-b border-gray-700/50">
+                <div class="text-center md:text-left">
+                     <h1 class="text-2xl md:text-3xl font-bold text-gray-100 mb-1">Migraine Aura Visualization</h1>
+                     <p class="text-gray-400">A timeline of temporary visual disturbances.</p>
+                </div>
+                <div class="flex items-center gap-3 mt-4 md:mt-0">
+                    <button id="info-btn" class="glass-button text-gray-200 font-semibold p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
+                    <button id="update-data-btn" class="glass-button text-white font-semibold px-5 py-2.5 rounded-lg">
+                        Update Data
+                    </button>
+                </div>
+            </div>
+            <div id="legend" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+            <div id="chart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-100">About Migraine Auras</h2>
+                <button id="close-info-modal-btn" class="text-gray-400 hover:text-gray-200 text-3xl leading-none">&times;</button>
+            </div>
+            <div class="prose prose-invert max-w-none text-gray-300 space-y-4">
+                <p>For about one in five people with migraines, the experience begins with a distinct and often surreal prelude: the migraine aura.</p>
+                <p>These auras are most often visual, but they can also manifest as sensory, motor, or even verbal disturbances—a temporary disruption of the senses.</p>
+                <p>Imagine a slow-moving electrical or chemical wave sweeping across the visual cortex—the part of your brain that processes sight. As this wave propagates, it can create a cascade of vivid, sometimes disorienting, visual hallucinations.</p>
+                <p>The most classic example is the "fortification spectrum," named for its resemblance to the shimmering, jagged walls of a medieval fortress. It might begin as a small, shimmering spot of light or a cluster of geometric shapes that slowly drift across your field of vision.</p>
+                <p>This phenomenon can expand into a crescent or C-shape, often with a scintillating, zigzagging edge. As it moves, it seems to grow, sometimes leaving a temporary blind spot (a scotoma) in its wake. While each person's experience is unique—ranging from bright spots to brilliant flashes—these captivating disturbances typically last between 10 and 30 minutes before fading away.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Modal -->
+    <div id="data-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-100">Paste Your Data</h2>
+                <button id="close-data-modal-btn" class="text-gray-400 hover:text-gray-200 text-3xl leading-none">&times;</button>
+            </div>
+            <p class="text-gray-400 mb-4">Paste your data in the format `DD.MM.YY - EMOJI` below. Each entry should be on a new line.</p>
+            <textarea id="data-input" class="w-full h-64 p-3 border bg-gray-800 border-gray-600 text-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+            <div class="mt-6 flex justify-end gap-4">
+                <button id="cancel-btn" class="glass-button text-gray-200 font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                <button id="visualize-btn" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 transition-all">Visualize</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let rawData = `
+        01.08.18 - ⏺️
+        23.08.18 - ⏺️
+        02.09.18 - ⏺️
+        03.09.18 - ⏺️
+        11.10.18 - ⏺️
+        18.11.18 - ⏺️
+        13.12.18 - ⏺️
+        05.03.19 - ⏺️
+        17.03.19 - ⏺️
+        19.03.19 - ⏺️
+        21.03.19 - ⬅️
+        05.04.19 - ⬅️
+        20.06.19 - ⬅️
+        23.06.19 - ⬅️
+        28.06.19 - ➡️➡️➡️
+        21.07.19 - ➡️➡️
+        05.08.19 - ➡️➡️
+        21.08.19 - ⬅️
+        16.09.19 - ⬅️
+        18.09.19 - ⬅️
+        18.11.19 - ➡️
+        10.12.19 - ⬅️
+        15.12.19 - ⬅️
+        26.02.20 - ➡️
+        05.03.20 - ➡️
+        07.03.20 - ⬅️
+        03.04.20 - ⬅️
+        13.04.20 - ⬅️↕️
+        21.04.20 - ➡️
+        28.04.20 - ⬅️➡️
+        08.05.20 - ➡️
+        21.05.20 - ➡️↕️
+        15.06.20 - ➡️
+        14.07.20 - ⬅️
+        05.08.20 - ➡️
+        11.08.20 - ➡️
+        13.08.20 - ⬅️➡️
+        15.08.20 - ➡️
+        19.08.20 - ⬅️
+        20.08.20 - ➡️
+        14.09.20 - ➡️
+        22.10.20 - ➡️
+        04.11.20 - ➡️
+        12.01.21 - ⬅️
+        14.01.21 - ⬅️
+        20.01.21 - ➡️➡️
+        22.01.21 - ➡️
+        10.02.21 - ⬅️
+        20.03.21 - ➡️
+        05.05.21 - ⬅️
+        06.05.21 - ➡️⬅️
+        26.07.21 - ➡️🛌⬅️
+        29.07.21 - ➡️
+        18.08.21 - ➡️🛌
+        19.08.21 - ➡️
+        22.08.21 - ➡️🛌
+        28.08.21 - ➡️➡️➡️
+        01.09.21 - ⬅️
+        29.09.21 - ➡️
+        14.10.21 - ➡️
+        16.10.21 - ⬅️🔄
+        23.11.21 - ➡️🏃🏼‍➡️
+        22.12.21 - ➡️🛌
+        19.01.22 - ➡️
+        20.01.22 - ⬅️
+        21.01.22 - ⬅️
+        28.04.22 - ➡️
+        20.05.22 - ➡️
+        19.06.22 - ➡️
+        20.06.22 - ➡️
+        05.11.22 - ⬅️
+        10.02.23 - ➡️🛌
+        08.03.23 - ➡️⬅️
+        02.04.23 - ⬅️↕️
+        08.04.23 - ➡️⬅️↕️
+        05.05.23 - ⬅️
+        09.06.23 - ⬅️
+        31.07.23 - ➡️🛌
+        09.08.23 - ➡️
+        11.09.23 - ➡️
+        05.11.23 - ⬅️↕️
+        03.12.23 - ➡️
+        19.02.24 - ➡️
+        22.02.24 - ➡️⬅️
+        27.02.24 - ➡️
+        06.03.24 - ➡️
+        17.03.24 - ➡️
+        03.04.24 - ⬅️
+        19.05.24 - ➡️
+        02.06.24 - ➡️🛌
+        20.06.24 - ⬅️
+        28.06.24 - ➡️
+        12.07.24 - ➡️↕️
+        23.07.24 - ⬅️
+        07.08.24 - ➡️
+        19.08.24 - ⬅️
+        12.09.24 - ➡️
+        23.09.24 - ⬅️
+        28.09.24 - ⬅️🛌
+        05.10.24 - ➡️
+        17.10.24 - ➡️
+        23.10.24 - ⬅️➡️
+        11.11.24 - ⬅️
+        13.11.24 - ⬅️
+        29.11.24 - ⬅️
+        17.12.24 - ⬅️
+        19.12.24 - ➡️
+        11.01.25 - ➡️
+        25.01.25 - ➡️🛌
+        28.01.25 - ⬅️
+        13.02.25 - ⬅️↕️
+        20.02.25 - ➡️
+        22.02.25 - ⬅️
+        10.03.25 - ⬅️
+        19.03.25 - ⬅️
+        03.04.25 - ➡️🛌
+        12.04.25 - ➡️
+        17.04.25 - ➡️
+        29.04.25 - ⬅️
+        10.05.25 - ⬅️
+        16.05.25 - ➡️↕️
+        22.05.25 - ➡️
+        02.06.25 - ➡️
+        15.06.25 - ⬅️
+        25.06.25 - ⬅️
+        03.07.25 - ⬅️
+        `;
+
+        // --- Data Processing and Categorization ---
+        const categories = {
+            'Forward': { color: '#22c55e' },
+            'Backward': { color: '#ef4444' },
+            'Mixed': { color: '#f97316' },
+            'Milestone': { color: '#6b7280' }
+        };
+        const categoryOrder = ['Forward', 'Backward', 'Mixed', 'Milestone'];
+
+        function categorizeEmoji(emoji) {
+            const hasForward = emoji.includes('➡️');
+            const hasBackward = emoji.includes('⬅️');
+            const hasOtherSymbols = emoji.includes('🛌') || emoji.includes('↕️') || emoji.includes('🔄') || emoji.includes('🏃');
+
+            if (emoji === '⏺️') return 'Milestone';
+            if ((hasForward && hasBackward) || hasOtherSymbols) return 'Mixed';
+            if (hasForward) return 'Forward';
+            if (hasBackward) return 'Backward';
+            
+            return 'Mixed'; // Fallback for any other complex cases
+        }
+
+        function parseAndProcessData(dataText) {
+            const parseDate = d3.timeParse("%d.%m.%y");
+            const individualEvents = dataText.trim().split('\n').map(line => {
+                const parts = line.split(' - ');
+                if (parts.length !== 2) return null;
+                const dateStr = parts[0].trim();
+                const emoji = parts[1].trim();
+                return { 
+                    date: parseDate(dateStr), 
+                    category: categorizeEmoji(emoji),
+                    emoji: emoji
+                };
+            }).filter(d => d && d.date !== null);
+
+            const aggregatedData = d3.rollup(
+                individualEvents,
+                v => ({
+                    counts: d3.rollup(v, g => g.length, d => d.category),
+                    emojis: v.map(d => d.emoji)
+                }),
+                d => d3.timeMonth.floor(d.date)
+            );
+            
+            return Array.from(aggregatedData, ([date, monthData]) => {
+                const obj = { date, emojis: monthData.emojis };
+                categoryOrder.forEach(cat => {
+                    obj[cat] = monthData.counts.get(cat) || 0;
+                });
+                return obj;
+            }).sort((a, b) => a.date - b.date);
+        }
+
+        // --- Chart State ---
+        let currentFilter = 'All';
+
+        // --- D3 Chart Setup ---
+        const container = d3.select("#chart");
+        const legendContainer = d3.select("#legend");
+        const margin = { top: 20, right: 30, bottom: 40, left: 30 };
+        const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+        function renderChart(data) {
+            if (!data || data.length === 0) {
+                container.html('<div class="text-center text-gray-500 py-16">No valid data to display. Please check the format.</div>');
+                legendContainer.html('');
+                return;
+            }
+
+            container.selectAll("*").remove();
+            legendContainer.selectAll("*").remove();
+
+            const containerNode = container.node();
+            const width = containerNode.clientWidth - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            const svg = container.append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // --- Legend ---
+            const allCategories = ['All', ...categoryOrder];
+            allCategories.forEach(cat => {
+                const legendItem = legendContainer.append('div')
+                    .attr('class', 'legend-item text-sm text-gray-200 font-medium px-3 py-1 rounded-full flex items-center gap-2')
+                    .style('color', cat === 'All' ? '#e5e7eb' : (categories[cat]?.color || '#9ca3af'))
+                    .classed('active', cat === currentFilter)
+                    .on('click', () => {
+                        currentFilter = cat;
+                        renderChart(data); // Re-render with new filter
+                    });
+                legendItem.append('span').attr('class', 'w-3 h-3 rounded-full').style('background-color', cat === 'All' ? '#9ca3af' : (categories[cat]?.color || '#9ca3af'));
+                legendItem.append('span').text(cat);
+            });
+
+            // --- Stack Layout ---
+            const stack = d3.stack()
+                .keys(categoryOrder)
+                .order(d3.stackOrderInsideOut)
+                .offset(d3.stackOffsetWiggle);
+            
+            const series = stack(data);
+
+            // --- Axes ---
+            const x = d3.scaleTime().domain(d3.extent(data, d => d.date)).range([0, width]);
+            const y = d3.scaleLinear().domain([d3.min(series, d => d3.min(d, d => d[0])), d3.max(series, d => d3.max(d, d => d[1]))]).range([height, 0]);
+            const xAxis = d3.axisBottom(x).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("'%y"));
+            svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(xAxis);
+
+            // --- Area Generator ---
+            const area = d3.area().x(d => x(d.data.date)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveBasis);
+
+            // --- Drawing Layers ---
+            svg.selectAll(".stream-layer").data(series).enter().append("path").attr("class", d => `stream-layer ${d.key}`).attr("d", area).style("fill", d => categories[d.key].color).classed('filtered-out', d => currentFilter !== 'All' && d.key !== currentFilter);
+
+            // --- Interactivity ---
+            const hoverLine = svg.append("line").attr("class", "hover-line").style("opacity", 0);
+            const bisectDate = d3.bisector(d => d.date).left;
+
+            svg.append("rect").attr("width", width).attr("height", height).style("fill", "none").style("pointer-events", "all")
+                .on("mouseover", () => { tooltip.style("opacity", 1); hoverLine.style("opacity", 1); })
+                .on("mouseout", () => { tooltip.style("opacity", 0); hoverLine.style("opacity", 0); })
+                .on("mousemove", (event) => {
+                    const [mx] = d3.pointer(event);
+                    const date = x.invert(mx);
+                    const index = bisectDate(data, date, 1);
+                    const d0 = data[index - 1];
+                    const d1 = data[index];
+                    const d = (d1 && (date - d0.date > d1.date - date)) ? d1 : d0;
+                    if (!d) return;
+
+                    hoverLine.attr("x1", x(d.date)).attr("x2", x(d.date)).attr("y1", 0).attr("y2", height);
+                    tooltip.style("left", (event.pageX + 15) + "px").style("top", (event.pageY) + "px");
+                    
+                    let tooltipContent = `<div class="tooltip-title">${d3.timeFormat("%B %Y")(d.date)}</div>`;
+                    categoryOrder.forEach(cat => {
+                        if (d[cat] > 0) {
+                           tooltipContent += `<div class="tooltip-item"><div class="w-2 h-2 rounded-full" style="background-color: ${categories[cat].color}"></div><div>${cat}: ${d[cat]}</div></div>`;
+                        }
+                    });
+
+                    if (d.emojis && d.emojis.length > 0) {
+                        tooltipContent += `<hr class="my-2 border-gray-600">`;
+                        tooltipContent += `<div class="tooltip-emojis flex flex-wrap gap-x-2">${d.emojis.join(' ')}</div>`;
+                    }
+                    tooltip.html(tooltipContent);
+                });
+        }
+
+        // --- Modal Logic ---
+        const dataModal = document.getElementById('data-modal');
+        const infoModal = document.getElementById('info-modal');
+        
+        const updateDataBtn = document.getElementById('update-data-btn');
+        const infoBtn = document.getElementById('info-btn');
+
+        const closeDataModalBtn = document.getElementById('close-data-modal-btn');
+        const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+        
+        const cancelBtn = document.getElementById('cancel-btn');
+        const visualizeBtn = document.getElementById('visualize-btn');
+        const dataInput = document.getElementById('data-input');
+
+        const openModal = (modal) => modal.classList.add('visible');
+        const closeModal = (modal) => modal.classList.remove('visible');
+
+        updateDataBtn.addEventListener('click', () => {
+            dataInput.value = rawData.trim();
+            openModal(dataModal);
+        });
+        infoBtn.addEventListener('click', () => openModal(infoModal));
+
+        closeDataModalBtn.addEventListener('click', () => closeModal(dataModal));
+        closeInfoModalBtn.addEventListener('click', () => closeModal(infoModal));
+        
+        cancelBtn.addEventListener('click', () => closeModal(dataModal));
+        
+        dataModal.addEventListener('click', (e) => { if (e.target === dataModal) closeModal(dataModal); });
+        infoModal.addEventListener('click', (e) => { if (e.target === infoModal) closeModal(infoModal); });
+
+        visualizeBtn.addEventListener('click', () => {
+            rawData = dataInput.value;
+            const newData = parseAndProcessData(rawData);
+            renderChart(newData);
+            closeModal(dataModal);
+        });
+
+
+        // --- Initial Draw & Resize Handling ---
+        let initialData = parseAndProcessData(rawData);
+        renderChart(initialData);
+
+        window.addEventListener('resize', () => {
+            let currentData = parseAndProcessData(rawData);
+            renderChart(currentData);
+        });
+    </script>
+</body>
+</html>
